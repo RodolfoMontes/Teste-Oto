@@ -1,0 +1,116 @@
+-- Query Original
+SELECT DISTINCT 
+       area,
+       COUNT()
+FROM (SELECT pid,
+             area
+      FROM export AS c
+        INNER JOIN (SELECT 
+                      customer_fk
+                    FROM contact
+                    GROUP BY customer_fk
+                    HAVING COUNT() >= 1) AS f ON c.pid = f.customer_fk
+        LEFT JOIN (SELECT DISTINCT store_state,
+                          CASE
+                            WHEN store_state = 'RR'  THEN 'Norte'
+                            WHEN store_state = 'AP' THEN 'Norte'
+                            WHEN store_state = 'PB' THEN 'Nordeste'
+                            WHEN store_state = 'AM' THEN 'Norte'
+                            WHEN store_state = 'PE' THEN 'Nordeste'
+                            WHEN store_state = 'AC' THEN 'Norte'
+                            WHEN store_state = 'MT' THEN 'Centro-oeste'
+                            WHEN store_state = 'RO' THEN 'Norte'
+                            WHEN store_state = 'MA' THEN 'Nordeste'
+                            WHEN store_state = 'PA' THEN 'Norte'
+                            WHEN store_state = 'PI' THEN 'Nordeste'  
+                            WHEN store_state = 'GO' THEN 'Centro-oeste'
+                            WHEN store_state = 'CE' THEN 'Nordeste'
+                            WHEN store_state = 'DF' THEN 'Centro-oeste'
+                            WHEN store_state = 'RN' THEN 'Nordeste'
+                            WHEN store_state = 'AL' THEN 'Nordeste'
+                            WHEN store_state = 'TO' THEN 'Norte'
+                            WHEN store_state = 'SE' THEN 'Nordeste'
+                            WHEN store_state = 'BA' THEN 'Nordeste'
+                            WHEN store_state = 'MS' THEN 'Centro-oeste'
+                            WHEN store_state = 'MG' THEN 'Sudeste'
+                            WHEN store_state = 'ES' THEN 'Sudeste'
+                            WHEN store_state = 'SC' THEN 'Sul'
+                            WHEN store_state = 'RJ' THEN 'Sudeste'
+                            WHEN store_state = 'SP' THEN 'Sudeste'
+                            WHEN store_state = 'PR' THEN 'Sul'
+                            WHEN store_state = 'RS' THEN 'Sul'
+                          END AS area
+                   FROM store_detail
+                   ORDER BY area) AS a ON c.state = a.store_state)
+GROUP BY area
+
+
+-- Analisando a query sem o banco de dados.
+-- Verificando a possibilidade de criação de indice para desenpenho da query.
+-- Criando uma tabela auxiliar para conversão do 'CASE' facilitando na visualização da query, já que essas informações são estáticas.
+
+CREATE TABLE tabela_aux(
+  store_state char(2)
+  area varchar (15)
+);
+
+-- Criação do index para tabela auxiliar.
+CREATE INDEX tabela_aux_index ON tabela_aux (
+    store_state,
+    area
+);
+
+-- Criado um índice para melhorar a performace do retorno da coluna customer_fk da tabela contact.
+CREATE INDEX contact_index ON  contact (
+  customer_fk
+);
+
+-- Realizando a população da tabela auxiliar para que eu possa realizar a consulta sem necessidade do CASE.
+INSERT INTO tabela_aux VALUES
+('RR','Norte'),
+('AP','Norte'),
+('PB','Nordeste'),
+('AM','Norte'),
+('PE','Nordeste'),
+('AC','Norte'),
+('MT','Centro-oeste'),
+('RO','Norte'),
+('MA','Nordeste'),
+('PA','Norte'),
+('PI','Nordeste'  ),
+('GO','Centro-oeste'),
+('CE','Nordeste'),
+('DF','Centro-oeste'),
+('RN','Nordeste'),
+('AL','Nordeste'),
+('TO','Norte'),
+('SE','Nordeste'),
+('BA','Nordeste'),
+('MS','Centro-oeste'),
+('MG','Sudeste'),
+('ES','Sudeste'),
+('SC','Sul'),
+('RJ','Sudeste'),
+('SP','Sudeste'),
+('PR','Sul'),
+('RS','Sul')
+
+
+
+-- Query Alterada
+SELECT DISTINCT 
+       area,
+       COUNT()
+FROM (SELECT pid,
+             a.area  -- identificando o retorno de área
+      FROM export AS c
+        INNER JOIN (SELECT 
+                      customer_fk
+                    FROM contact
+                    GROUP BY customer_fk
+                    HAVING COUNT() >= 1) AS f ON c.pid = f.customer_fk
+        LEFT JOIN tabela_aux AS a ON c.state = a.store_state) -- Retirando o case e aplicando a tabela auxiliar com o índice criado. 
+GROUP BY area
+
+2.Sugira um caminho para medir a melhoria de performance entre a query inicial e a versão desenvolvida.
+R: Sem o banco de dados para realizar os testes não é possível que faça uma demonstração, porém usaria 
